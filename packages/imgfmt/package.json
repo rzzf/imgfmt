@@ -3,6 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "description": "Exact-one delivery of user-provided CSS image format variants.",
+  "keywords": [
+    "avif",
+    "css",
+    "image",
+    "parcel",
+    "postcss",
+    "unplugin",
+    "vite",
+    "webp"
+  ],
+  "homepage": "https://github.com/rzzf/imgfmt#readme",
+  "bugs": {
+    "url": "https://github.com/rzzf/imgfmt/issues"
+  },
+  "license": "MIT",
+  "author": "rzzf",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rzzf/imgfmt.git",
+    "directory": "packages/imgfmt"
+  },
   "files": [
     "dist"
   ],
@@ -17,6 +38,9 @@
       "module-sync": "./dist/index.js",
       "default": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "vp pack src/index.ts --dts"

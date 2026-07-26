@@ -12,7 +12,9 @@
     "url": "git+https://github.com/rzzf/imgfmt.git"
   },
   "scripts": {
-    "build": "vp run -r build"
+    "build": "vp run -r build",
+    "release:prepare": "node ./scripts/prepare-release.mjs",
+    "release:verify": "node ./scripts/verify-release.mjs"
   },
   "devDependencies": {
     "typescript": "catalog:",
