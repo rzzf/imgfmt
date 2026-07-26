@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { normalizeOptions, resolveSiblingVariantUrl } from "../../src/options";
+import { normalizeOptions, resolveSiblingVariantUrl } from "../../src/core/options";
 
 describe("normalizeOptions", () => {
   it("defaults to AVIF followed by WebP", () => {
@@ -28,14 +28,14 @@ describe("normalizeOptions", () => {
 });
 
 describe("resolveSiblingVariantUrl", () => {
-  it("replaces the path extension while retaining query and fragment suffixes", () => {
+  it("replaces a local path extension while retaining query and fragment suffixes", () => {
     expect(
       resolveSiblingVariantUrl({
         extension: ".avif",
         format: "avif",
-        originalUrl: "https://cdn.example/images/hero.large.png?v=1#crop",
+        originalUrl: "/images/hero.large.png?v=1#crop",
       }),
-    ).toBe("https://cdn.example/images/hero.large.avif?v=1#crop");
+    ).toBe("/images/hero.large.avif?v=1#crop");
   });
 
   it.each(["https://cdn.example.com", "//cdn.example.com", "https://cdn.example.com/"])(

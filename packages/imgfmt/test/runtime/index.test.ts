@@ -5,6 +5,11 @@ import {
   serializeCapabilityState,
   type FormatProbeDefinition,
 } from "../../src/runtime";
+import {
+  assertDocumentBootstrap,
+  assertRuntimeMarkerAvailable,
+  injectDocumentBootstrap,
+} from "../../src/runtime/document";
 
 interface FakeImageSurface {
   complete: boolean;
@@ -95,6 +100,36 @@ describe("generateRuntimeSource", () => {
   it("emits classic syntax without Promise APIs", () => {
     const source = generateRuntimeSource({ formats });
     expect(source).not.toMatch(/\b(?:const|let|class|Promise|async|await)\b|=>/);
+  });
+});
+
+describe("document bootstrap", () => {
+  it("ignores marker-like text inside raw-text elements", () => {
+    const html = `<html><head>
+      <script>window.template = "<i data-imgfmt-runtime>";</script>
+      <style>.hero::before { content: "<i data-imgfmt-runtime>"; }</style>
+    </head><body></body></html>`;
+
+    expect(() => assertRuntimeMarkerAvailable(html)).not.toThrow();
+    const transformed = injectDocumentBootstrap(html, "./imgfmt-runtime.js");
+    expect(() => assertDocumentBootstrap(transformed, "./imgfmt-runtime.js")).not.toThrow();
+  });
+
+  it("rejects occupied markers and non-classic runtime attributes", () => {
+    expect(() =>
+      assertRuntimeMarkerAvailable(
+        '<html><head><script data-imgfmt-runtime src="other.js"></script></head></html>',
+      ),
+    ).toThrow("owns the data-imgfmt-runtime attribute");
+
+    const transformed = injectDocumentBootstrap(
+      "<html><head></head><body></body></html>",
+      "./imgfmt-runtime.js",
+    ).replace("<script async", "<script async nomodule");
+
+    expect(() => assertDocumentBootstrap(transformed, "./imgfmt-runtime.js")).toThrow(
+      "classic async script",
+    );
   });
 });
 

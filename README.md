@@ -1,28 +1,49 @@
 # imgfmt
 
-CSS-first delivery of user-provided image format variants, with an exact-one loading goal.
+Deliver user-provided AVIF, WebP and original background images through CSS while loading exactly one candidate for each managed image occurrence.
 
-> **Status:** experimental and not published yet. The first working vertical slice supports PostCSS and Vite; its API may still change before the first release.
+> imgfmt is experimental and has not been published yet.
 
 ## Installation
-
-After the first public release:
 
 ```sh
 pnpm add -D imgfmt postcss
 ```
 
-To work on the repository now:
+The default format order is AVIF, WebP, then the original URL:
 
-```sh
-git clone https://github.com/rzzf/imgfmt.git
-cd imgfmt
-vp install
+```css
+.hero {
+  background-image: url("./hero.png");
+}
 ```
 
-## Vite
+Provide every referenced file yourself:
 
-The default configuration prefers AVIF, then WebP, then the retained original URL:
+```text
+hero.png
+hero.avif
+hero.webp
+```
+
+imgfmt does not create or optimize images. Its build adapters keep generated URLs in the host's normal CSS and asset pipeline.
+
+## CSS contract
+
+imgfmt processes direct, top-level, local `url()` occurrences in `background` and `background-image` declarations.
+
+- The original rule is retained, but each managed local `url()` is replaced with `none`. The original-format URL moves into the final unsupported-format fallback rule.
+- A generated declaration keeps the original property name. A `background` shorthand is reduced to the smallest affected property, `background-image`.
+- The emitted image value is not decoded, re-encoded or normalized. Quotes, whitespace and the surrounding URL syntax are preserved; only the filename suffix changes.
+- URLs with a scheme, including `http:`, `https:` and `data:`, and protocol-relative URLs beginning with `//`, are left untouched.
+- Non-URL resets, pure gradients and unrelated background declarations are not mirrored. imgfmt does not expand a shorthand into a complete background cascade.
+- Nested URLs inside functions such as `image-set()` are outside the transformation boundary.
+
+The default sibling convention preserves query strings and fragments. For example, `url( "./hero.png?x=1#top" )` becomes `url( "./hero.avif?x=1#top" )` without changing its original formatting.
+
+This local-only model has a deliberate cascade limit. Capability gates add selector specificity so that a selected candidate overrides the retained original declaration in older browsers. A later, lower-specificity `background: none`, `background-image: none` or `all` reset is not mirrored and therefore may not override that generated candidate. Stylesheets that rely on those cross-rule resets are outside the current transformation boundary.
+
+## Vite and Vue
 
 ```ts
 // vite.config.ts
@@ -34,41 +55,15 @@ export default defineConfig({
 });
 ```
 
-Given this CSS:
+Vue projects built with Vite use the same configuration. The adapter transforms CSS, adds the pending document state and serves or emits the asynchronous capability runtime. It supports browser applications with at least one HTML entry; it rejects library, SSR and worker builds.
 
-```css
-.hero {
-  background-image: url("./hero.png");
-}
-```
-
-the application must provide these files:
-
-```text
-hero.png
-hero.avif
-hero.webp
-```
-
-imgfmt never creates those files. Every generated URL remains in Vite's normal asset pipeline, including URL resolution, hashing, public paths and missing-file errors.
-
-Vue projects built with Vite use the same PostCSS path; dedicated Vue SFC integration coverage is still planned.
-
-### Existing PostCSS config
-
-Vite does not expose a safe API for appending a plugin after an external `postcss.config.*` file. imgfmt therefore stops with an actionable error instead of replacing that configuration. Share one option object, install the PostCSS entry manually, and set `postcss: "manual"` on the Vite adapter:
+If Vite loads an external `postcss.config.*`, install the PostCSS entry there and select manual mode with one shared option object:
 
 ```ts
 // imgfmt.config.ts
 import { defineConfig } from "imgfmt";
 
-export default defineConfig({
-  postcss: "manual",
-  formats: [
-    { id: "avif", extension: ".avif" },
-    { id: "webp", extension: ".webp" },
-  ],
-});
+export default defineConfig({ postcss: "manual" });
 ```
 
 ```ts
@@ -92,102 +87,210 @@ export default defineConfig({
 });
 ```
 
-The `/postcss` entry is the CSS compiler. Pair it with a host integration such as `/vite`, which owns the HTML state and browser runtime.
+Run `imgfmt/postcss` after plugins that resolve imports, nesting or preprocessors.
 
-## Custom URLs and formats
-
-The default resolver replaces the filename extension while preserving query strings and fragments. A synchronous or asynchronous resolver can instead return opaque URLs:
+## PostCSS
 
 ```ts
-// vite.config.ts
-import { defineConfig } from "vite";
-import imgfmt from "imgfmt/vite";
+// postcss.config.ts
+import imgfmt from "imgfmt/postcss";
 
-const variantManifest: Record<string, Record<string, string | undefined>> = {
-  "./hero.png": {
-    avif: "https://cdn.example.com/hero.avif",
-    webp: "https://cdn.example.com/hero.webp",
-  },
+export default {
+  plugins: [imgfmt()],
 };
+```
 
-export default defineConfig({
+The PostCSS entry only compiles CSS. It does not modify HTML or install the runtime, so an application must also use a host adapter with the same options. Standalone CSS libraries may compile with this entry, but the consuming document owns runtime integration. Unresolved `@import` rules are rejected because imgfmt must see every participating stylesheet.
+
+## Rollup
+
+Place imgfmt before the CSS extraction plugin and use an HTML plugin that emits an `.html` asset:
+
+```ts
+// rollup.config.ts
+import html from "@rollup/plugin-html";
+import imgfmt from "imgfmt/rollup";
+import css from "rollup-plugin-postcss";
+
+export default {
+  input: "src/main.ts",
+  output: { dir: "dist", format: "es" },
+  plugins: [imgfmt(), css({ extract: true }), html()],
+};
+```
+
+The Rollup adapter transforms source CSS before extraction, then adds the pending state and runtime to emitted HTML. It deliberately does not rewrite final CSS assets in `generateBundle`, where asset URL handling would already be complete. Your downstream CSS plugin must extract CSS and handle or preserve its asset URLs. A build with no emitted HTML fails closed.
+
+If another PostCSS pipeline owns the source, add `imgfmt/postcss` there and pass `{ postcss: "manual" }` to `imgfmt/rollup`.
+
+## Rolldown
+
+Rolldown uses the same ordering contract:
+
+```ts
+// rolldown.config.ts
+import html from "@rollup/plugin-html";
+import imgfmt from "imgfmt/rolldown";
+import css from "rollup-plugin-postcss";
+
+export default {
+  input: "src/main.ts",
+  output: { dir: "dist", format: "es" },
+  plugins: [imgfmt(), css({ extract: true }), html()],
+};
+```
+
+Rolldown does not provide the CSS extraction step for imgfmt. Keep a compatible CSS extractor after imgfmt and ensure an HTML plugin emits the document. Manual PostCSS ownership works in the same way as Rollup.
+
+## webpack
+
+webpack requires explicit PostCSS ownership and `HtmlWebpackPlugin`:
+
+```ts
+// webpack.config.ts
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import { defineConfig } from "imgfmt";
+import imgfmtPostcss from "imgfmt/postcss";
+import imgfmt from "imgfmt/webpack";
+
+const options = defineConfig({ postcss: "manual" });
+
+export default {
+  entry: "./src/main.ts",
+  target: "web",
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          { loader: "css-loader", options: { importLoaders: 1 } },
+          {
+            loader: "postcss-loader",
+            options: {
+              postcssOptions: { plugins: [imgfmtPostcss(options)] },
+            },
+          },
+        ],
+      },
+      {
+        test: /\.(?:avif|png|webp)$/i,
+        type: "asset/resource",
+      },
+    ],
+  },
+  plugins: [new HtmlWebpackPlugin(), new MiniCssExtractPlugin(), imgfmt(options)],
+};
+```
+
+Keep `imgfmt/postcss` in the loader chain that owns the final source CSS. The webpack adapter only owns HTML and runtime delivery; it rejects automatic PostCSS mode, non-document targets, library builds and configurations without `HtmlWebpackPlugin`.
+
+## Rspack
+
+Rspack also requires manual PostCSS ownership and `rspack.HtmlRspackPlugin`:
+
+```ts
+// rspack.config.ts
+import { rspack } from "@rspack/core";
+import { defineConfig } from "imgfmt";
+import imgfmtPostcss from "imgfmt/postcss";
+import imgfmt from "imgfmt/rspack";
+
+const options = defineConfig({ postcss: "manual" });
+
+export default {
+  entry: "./src/main.ts",
+  target: "web",
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        type: "css/auto",
+        use: [
+          {
+            loader: "postcss-loader",
+            options: {
+              postcssOptions: { plugins: [imgfmtPostcss(options)] },
+            },
+          },
+        ],
+      },
+      {
+        test: /\.(?:avif|png|webp)$/i,
+        type: "asset/resource",
+      },
+    ],
+  },
+  plugins: [new rspack.HtmlRspackPlugin(), imgfmt(options)],
+};
+```
+
+The Rspack adapter has the same boundary as webpack: the host CSS pipeline runs `imgfmt/postcss`, while the adapter installs the document state and runtime. Server, worker and library builds are unsupported.
+
+## esbuild
+
+esbuild has no HTML lifecycle, so document ownership is required. Static mode reads source HTML and writes transformed copies under `outdir`:
+
+```ts
+// build.ts
+import { build } from "esbuild";
+import imgfmt from "imgfmt/esbuild";
+
+await build({
+  absWorkingDir: process.cwd(),
+  bundle: true,
+  entryPoints: ["src/main.ts"],
+  outdir: "dist",
+  loader: {
+    ".avif": "file",
+    ".png": "file",
+    ".webp": "file",
+  },
   plugins: [
     imgfmt({
-      formats: [
-        { id: "avif", extension: ".avif" },
-        { id: "webp", extension: ".webp" },
-      ],
-      async resolveVariantUrl({ originalUrl, format }) {
-        return variantManifest[originalUrl]?.[format];
+      document: {
+        mode: "static",
+        files: [{ input: "index.html", output: "index.html" }],
       },
     }),
   ],
 });
 ```
 
-Returning `undefined` means that format is unavailable for that particular URL occurrence. Selection continues through the configured preference order and finally restores the original. A custom format must provide one or more browser probes:
+Manual mode delegates the HTML write to another integration:
 
 ```ts
-import { defineConfig } from "imgfmt";
+import imgfmt from "imgfmt/esbuild";
 
-const options = defineConfig({
-  formats: [
-    {
-      id: "example",
-      extension: ".example",
-      probes: [{ uri: "data:image/example;base64,...", width: 1, height: 1 }],
+const plugin = imgfmt({
+  document: {
+    mode: "manual",
+    onManifest(manifest) {
+      const html = manifest.install(sourceHtml, "pages/index.html");
+      const runtimeUrl = manifest.runtimeUrlFor("pages/index.html");
+      // Pass `html` and `runtimeUrl` to the document owner.
     },
-  ],
+    watchFiles: ["index.html"],
+  },
 });
 ```
 
-At most four formats are accepted because the compatibility backend emits every complete capability truth vector.
+Manual mode also supports `write: false`. Both modes require `bundle: true`, a browser build, at least one application entry and `outdir` rather than `outfile`. When imgfmt owns HTML, esbuild `publicPath` must be absolute, root-relative or `./`; nested documents resolve `./` relative to their output location. esbuild transforms filesystem `.css` and `.module.css` inputs automatically. If another plugin owns CSS loading, install `imgfmt/postcss` in that pipeline and set `postcss: "manual"`.
 
-## How delivery works
+## Runtime and exact-one delivery
 
-1. Built HTML contains `data-imgcaps="pending"` before CSS is evaluated.
-2. Vite injects a small external classic script with `async`; it does not block HTML parsing.
-3. The script starts Modernizr-style `new Image()` probes together, waits for every result or a deadline, and commits one complete capability state atomically.
-4. PostCSS emits mutually exclusive declarations for pending and every ready state. Each image occurrence independently chooses the first supported format that has a URL, otherwise the original.
-5. All competing declarations in the supported background cascade family are mirrored with equal gate specificity, preserving shorthand/longhand order and `!important` behavior.
+Each host adapter installs `data-imgcaps="pending"` before styles are evaluated and adds a small external classic script with `async`. Managed URLs in the retained source rule are already `none`, so no managed candidate is exposed while probing. The script runs `new Image()` probes concurrently and commits one complete capability state only after all probes settle or the deadline is reached. Generated selectors then choose AVIF, WebP or the original URL for that final state.
 
-The browser compatibility layer does not require `image-set()`, CSS custom properties, JavaScript modules, native `Promise` or Modernizr itself. Built-in probes cover baseline static AVIF and lossy static WebP. Probe `data:` URLs require a compatible `img-src` CSP policy; if the runtime or its probes are blocked, managed backgrounds remain suppressed rather than loading multiple candidates.
+This does not depend on `image-set()`, CSS custom properties, Modernizr, JavaScript modules or native `Promise`. If the runtime or probe data URLs are blocked by CSP, managed backgrounds remain in the pending `none` state rather than requesting several candidates.
 
-## Current CSS boundary
+## Scope
 
-The first slice manages direct, top-level `url()` occurrences in `background` and `background-image`. It also mirrors:
-
-- `background`, its Level 3 longhands, and the physical/logical position and repeat axis longhands from Level 4;
-- CSS-wide `all` resets, expanded only to those longhands;
-- rules inside `@media`, `@supports`, `@container` and `@layer`.
-
-Structural CSS failures are always fatal because partial transformation across several stylesheets could change the cascade. This includes keyframes, `@scope`, native nesting, unresolved `@import`, indirect root selectors, ambiguous escaped value identifiers, `image-set()`, `cross-fade()` and dynamic top-level image values. `strict: false` only lets an individual URL resolver failure warn and fall back for that candidate.
-
-The Vite entry supports document/client builds only and requires an HTML entry so it can install the static pending state and runtime. Remove it from SSR and worker plugin lists. CSS libraries should use `imgfmt/postcss` and arrange their document integration in the consuming application. Documents that omit an explicit `<html>` element, inline styles, unprocessed stylesheets and shadow roots are outside the current guarantee.
-
-## Scope boundary
-
-imgfmt handles CSS, document integration and opaque URLs only. It does not read, download, decode, encode, convert, optimize, emit or validate application image bytes. Image generation and compression belong in a separate tool; users provide and host every candidate.
-
-## Build-tool status
-
-- Vite: working experimental adapter, including HTML and development/build runtime delivery.
-- PostCSS: working shared CSS compiler.
-- Vue with Vite: uses the same PostCSS pipeline; dedicated SFC integration coverage is planned.
-- Parcel and other unplugin-family hosts: planned; no public adapter is exposed yet.
-
-## Repository layout
-
-| Workspace         | Responsibility                                      |
-| ----------------- | --------------------------------------------------- |
-| `packages/imgfmt` | The public package and its root, PostCSS, Vite paths |
-| `packages/parcel` | Private research scaffold for a native Parcel path   |
-
-All package manifests remain private until the public API and browser request behavior are ready for release.
+imgfmt delivers CSS and the browser capability runtime. It does not read, download, decode, encode, convert, compress, optimize, emit or validate image bytes. Users or a separate image pipeline must provide every same-name format variant.
 
 ## Development
 
-The repository uses Node.js 24, pnpm 11, TypeScript 6 and Vite+. Shared dependency versions are managed through pnpm catalogs.
+The repository uses Node.js 24, pnpm 11, TypeScript 6 and Vite+. Shared dependency versions use pnpm catalogs.
 
 ```sh
 vp install
@@ -196,7 +299,7 @@ vp test --run
 vp run -r build
 ```
 
-Tests live under each owning package's `test` directory.
+Tests live in `packages/imgfmt/test`.
 
 ## License
 

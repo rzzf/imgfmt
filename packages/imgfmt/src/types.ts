@@ -27,11 +27,44 @@ export type ImgfmtVariantUrlResolver = (
   request: ImgfmtVariantUrlRequest,
 ) => Promise<string | undefined> | string | undefined;
 
+export interface ImgfmtDocumentFile {
+  /** HTML source path, resolved from the host build root. */
+  readonly input: string;
+  /** Relative output path. Defaults to the input basename. */
+  readonly output?: string;
+}
+
+export interface ImgfmtDocumentManifest {
+  readonly runtimeFileName: string;
+  install(html: string, htmlOutput: string): string;
+  runtimeUrlFor(htmlOutput: string): string;
+}
+
+export interface ImgfmtStaticDocumentIntegration {
+  readonly mode: "static";
+  readonly files: readonly (ImgfmtDocumentFile | string)[];
+}
+
+export interface ImgfmtManualDocumentIntegration {
+  readonly mode: "manual";
+  readonly onManifest: (manifest: ImgfmtDocumentManifest) => Promise<void> | void;
+  readonly watchFiles?: readonly string[];
+}
+
+export type ImgfmtDocumentIntegration =
+  | ImgfmtManualDocumentIntegration
+  | ImgfmtStaticDocumentIntegration;
+
 export interface ImgfmtOptions {
+  /**
+   * Explicit document ownership for hosts such as esbuild that do not have
+   * an HTML pipeline. Hosts with a native document hook reject this option.
+   */
+  readonly document?: ImgfmtDocumentIntegration;
   /** Preferred format order. Defaults to AVIF followed by WebP. */
   readonly formats?: readonly ImgfmtFormatOptions[];
   readonly probeDeadlineMs?: number;
-  /** Let the Vite adapter install PostCSS, or manage imgfmt/postcss yourself. */
+  /** Let a capable host adapter transform CSS, or install imgfmt/postcss yourself. */
   readonly postcss?: "auto" | "manual";
   /** Override the default sibling-URL convention with opaque user URLs. */
   readonly resolveVariantUrl?: ImgfmtVariantUrlResolver;

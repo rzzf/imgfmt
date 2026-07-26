@@ -1,4 +1,4 @@
 {
   "files": [],
-  "references": [{ "path": "./packages/imgfmt" }, { "path": "./packages/parcel" }]
+  "references": [{ "path": "./packages/imgfmt" }]
 }

@@ -1,14 +1,27 @@
 packages:
   - packages/*
 
+allowBuilds:
+  esbuild: true
+
 catalog:
+  "@rollup/plugin-html": ^2.0.0
+  "@rspack/core": ^2.1.5
   "@types/node": ^24.13.3
+  css-loader: ^7.1.4
+  esbuild: ^0.28.1
+  html-webpack-plugin: ^5.6.7
+  mini-css-extract-plugin: ^2.10.2
   postcss: ^8.5.14
+  postcss-loader: ^8.2.1
+  rolldown: ^1.2.0
+  rollup: ^4.62.2
   typescript: ^6.0.3
   vite: npm:@voidzero-dev/vite-plus-core@0.2.6
   vite-official: npm:vite@^8.1.5
   vite-plus: 0.2.6
   vitest: 4.1.10
+  webpack: ^5.109.0
 
 overrides:
   vite: "catalog:"

@@ -1,6 +1,10 @@
-import { parseImageFormatId, type ImageFormatId } from "./core";
-import { defaultFormatProbes, defaultProbeDeadlineMs, type FormatProbeDefinition } from "./runtime";
-import type { ImgfmtFormatOptions, ImgfmtOptions, ImgfmtVariantUrlResolver } from "./types";
+import { parseImageFormatId, type ImageFormatId } from ".";
+import {
+  defaultFormatProbes,
+  defaultProbeDeadlineMs,
+  type FormatProbeDefinition,
+} from "../runtime";
+import type { ImgfmtFormatOptions, ImgfmtOptions, ImgfmtVariantUrlResolver } from "../types";
 
 export const maximumFormatCount = 4 as const;
 
@@ -83,31 +87,20 @@ export function resolveSiblingVariantUrl(
 ): string | undefined {
   const originalUrl = request.originalUrl;
 
-  if (/^(?:data|blob):/i.test(originalUrl) || originalUrl.startsWith("#")) {
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(originalUrl) || originalUrl.startsWith("#")) {
     return undefined;
   }
 
   const queryIndex = originalUrl.search(/[?#]/);
   const path = queryIndex === -1 ? originalUrl : originalUrl.slice(0, queryIndex);
   const suffix = queryIndex === -1 ? "" : originalUrl.slice(queryIndex);
-  const authority = path.match(/^(?:[a-z][a-z0-9+.-]*:)?\/\/[^/\\]*/i)?.[0] ?? "";
-  const pathname = path.slice(authority.length);
+  const slashIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
 
-  if (
-    authority.length === 0 &&
-    /^[a-z][a-z0-9+.-]*:/i.test(pathname) &&
-    !/^[a-z]:[/\\]/i.test(pathname)
-  ) {
+  if (path.length === 0 || path.endsWith("/") || path.endsWith("\\")) {
     return undefined;
   }
 
-  const slashIndex = Math.max(pathname.lastIndexOf("/"), pathname.lastIndexOf("\\"));
-
-  if (pathname.length === 0 || pathname.endsWith("/") || pathname.endsWith("\\")) {
-    return undefined;
-  }
-
-  const extensionIndex = pathname.lastIndexOf(".");
-  const stem = extensionIndex > slashIndex + 1 ? pathname.slice(0, extensionIndex) : pathname;
-  return `${authority}${stem}${request.extension}${suffix}`;
+  const extensionIndex = path.lastIndexOf(".");
+  const stem = extensionIndex > slashIndex + 1 ? path.slice(0, extensionIndex) : path;
+  return `${stem}${request.extension}${suffix}`;
 }

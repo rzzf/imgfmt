@@ -1,38 +1,13 @@
-import type { AtRule, Declaration, Node, PluginCreator, Result, Root, Rule } from "postcss";
+import type { Declaration, Node, Plugin, PluginCreator, Result, Root, Rule } from "postcss";
 import selectorParser from "postcss-selector-parser";
 import valueParser from "postcss-value-parser";
 
-import { selectCandidate, type CapabilityVector, type ImageVariantUrl } from "./core";
-import { normalizeOptions, type NormalizedFormatOptions } from "./options";
-import { capabilityAttribute } from "./runtime";
-import type { ImgfmtOptions, ImgfmtVariantUrlRequest } from "./types";
+import { selectCandidate, type CapabilityVector, type ImageVariantUrl } from "../core";
+import { normalizeOptions, type NormalizedFormatOptions } from "../core/options";
+import { capabilityAttribute } from "../runtime";
+import type { ImgfmtOptions, ImgfmtVariantUrlRequest } from "../types";
 
 const pluginName = "imgfmt";
-
-const backgroundLonghands = [
-  "background-attachment",
-  "background-clip",
-  "background-color",
-  "background-image",
-  "background-origin",
-  "background-position",
-  "background-position-block",
-  "background-position-inline",
-  "background-position-x",
-  "background-position-y",
-  "background-repeat",
-  "background-repeat-block",
-  "background-repeat-inline",
-  "background-repeat-x",
-  "background-repeat-y",
-  "background-size",
-] as const;
-
-const controlledProperties: ReadonlySet<string> = new Set([
-  "all",
-  "background",
-  ...backgroundLonghands,
-]);
 
 const imageValueProperties: ReadonlySet<string> = new Set(["background", "background-image"]);
 const allowedContainerAtRules: ReadonlySet<string> = new Set([
@@ -41,28 +16,23 @@ const allowedContainerAtRules: ReadonlySet<string> = new Set([
   "media",
   "supports",
 ]);
-const unsupportedDynamicFunctions: ReadonlySet<string> = new Set([
+const imageFunctions: ReadonlySet<string> = new Set([
+  "-moz-element",
   "-webkit-cross-fade",
   "-webkit-image-set",
-  "attr",
   "cross-fade",
   "element",
-  "env",
-  "first-valid",
-  "if",
   "image",
   "image-set",
   "paint",
-  "random-item",
-  "toggle",
-  "var",
 ]);
-
 interface OccurrencePlan {
   readonly declaration: Declaration;
-  readonly end: number;
+  readonly functionEnd: number;
+  readonly functionStart: number;
   readonly originalUrl: string;
-  readonly start: number;
+  readonly urlEnd: number;
+  readonly urlStart: number;
   readonly variants: Map<string, string>;
 }
 
@@ -76,29 +46,29 @@ interface ReadyState {
   readonly tokens: readonly string[];
 }
 
-interface PendingState {
-  readonly tokens: readonly string[];
-}
-
-type MirrorState =
-  | { readonly kind: "pending"; readonly state: PendingState }
-  | {
-      readonly kind: "ready";
-      readonly state: ReadyState;
-    };
-
 class UnsupportedCssError extends Error {}
 
-export const postcssPlugin: PluginCreator<ImgfmtOptions> = (inputOptions = {}) => {
+export interface CssCompilerOptions {
+  /** The host guarantees that every imported CSS module runs through imgfmt. */
+  readonly allowImports?: boolean;
+}
+
+export function createPostcssPlugin(
+  inputOptions: ImgfmtOptions = {},
+  compilerOptions: CssCompilerOptions = {},
+): Plugin {
   const options = normalizeOptions(inputOptions);
 
   return {
     postcssPlugin: pluginName,
     async Once(root, { result }): Promise<void> {
-      await transformCss(root, result, options);
+      await transformCss(root, result, options, compilerOptions);
     },
   };
-};
+}
+
+export const postcssPlugin: PluginCreator<ImgfmtOptions> = (inputOptions = {}) =>
+  createPostcssPlugin(inputOptions);
 
 postcssPlugin.postcss = true;
 
@@ -106,14 +76,17 @@ async function transformCss(
   root: Root,
   result: Result,
   options: ReturnType<typeof normalizeOptions>,
+  compilerOptions: CssCompilerOptions,
 ): Promise<void> {
-  reportRemainingImports(root, result);
+  if (compilerOptions.allowImports !== true) {
+    reportRemainingImports(root, result);
+  }
 
   const declarationPlans = new Map<Declaration, DeclarationPlan>();
   const eligibleRules: Rule[] = [];
 
   root.walkRules((rule) => {
-    const declarations = directControlledDeclarations(rule);
+    const declarations = directImageDeclarations(rule);
 
     if (declarations.length === 0) {
       return;
@@ -127,7 +100,7 @@ async function transformCss(
     }
 
     try {
-      gateSelector(rule.selector, pendingTokens(options.formats.length));
+      gateSelector(rule.selector, ["ready"]);
     } catch (error) {
       report(
         result,
@@ -140,32 +113,19 @@ async function transformCss(
     }
 
     let ruleIsSupported = true;
+    let hasManagedUrl = false;
 
     for (const declaration of declarations) {
-      if (
-        normalizeCssIdentifier(declaration.prop) === "all" &&
-        !isCssWideKeyword(declaration.value)
-      ) {
-        report(
-          result,
-          declaration,
-          "unsupported-all-value",
-          "Only CSS-wide values can be mirrored from the all property",
-          true,
-        );
-        ruleIsSupported = false;
-        continue;
-      }
-
-      if (!imageValueProperties.has(normalizeCssIdentifier(declaration.prop))) {
-        continue;
-      }
-
       try {
+        if (normalizeIdentifier(declaration.prop) === "background") {
+          extractBackgroundImage(declaration.value);
+        }
+
         const occurrences = discoverOccurrences(declaration);
 
         if (occurrences.length > 0) {
           declarationPlans.set(declaration, { declaration, occurrences });
+          hasManagedUrl = true;
         }
       } catch (error) {
         report(
@@ -179,7 +139,7 @@ async function transformCss(
       }
     }
 
-    if (ruleIsSupported) {
+    if (ruleIsSupported && hasManagedUrl) {
       eligibleRules.push(rule);
     } else {
       for (const declaration of declarations) {
@@ -190,25 +150,22 @@ async function transformCss(
 
   await resolveVariants(declarationPlans, result, options);
 
-  const states: readonly MirrorState[] = [
-    { kind: "pending", state: { tokens: pendingTokens(options.formats.length) } },
-    ...enumerateReadyStates(options.formats).map(
-      (state): MirrorState => ({ kind: "ready", state }),
-    ),
-  ];
+  const states = enumerateReadyStates(options.formats);
 
   for (const rule of eligibleRules) {
     for (const state of states) {
       rule.before(createMirror(rule, state, declarationPlans, options.formats));
     }
+
+    suppressOriginalUrls(rule, declarationPlans);
   }
 }
 
-function directControlledDeclarations(rule: Rule): Declaration[] {
+function directImageDeclarations(rule: Rule): Declaration[] {
   const declarations: Declaration[] = [];
 
   for (const node of rule.nodes) {
-    if (node.type === "decl" && controlledProperties.has(normalizeCssIdentifier(node.prop))) {
+    if (node.type === "decl" && imageValueProperties.has(normalizeIdentifier(node.prop))) {
       declarations.push(node);
     }
   }
@@ -229,7 +186,7 @@ function findUnsupportedContext(rule: Rule): string | undefined {
     }
 
     if (parent.type === "atrule") {
-      const name = normalizeAtRuleName(parent);
+      const name = normalizeIdentifier(parent.name);
 
       if (name.endsWith("keyframes")) {
         return "Background images inside keyframes are not supported";
@@ -256,7 +213,7 @@ function findUnsupportedContext(rule: Rule): string | undefined {
 
 function reportRemainingImports(root: Root, result: Result): void {
   root.walkAtRules((atRule) => {
-    if (normalizeAtRuleName(atRule) !== "import") {
+    if (normalizeIdentifier(atRule.name) !== "import") {
       return;
     }
 
@@ -284,81 +241,42 @@ function discoverOccurrences(declaration: Declaration): readonly OccurrencePlan[
   const parsed = valueParser(declaration.value);
   const occurrences: OccurrencePlan[] = [];
 
-  if (containsAmbiguousEscapedWord(parsed.nodes)) {
-    throw new UnsupportedCssError(
-      "Escaped identifiers split across value tokens are not supported",
-    );
-  }
-
   for (const node of parsed.nodes) {
     if (node.type !== "function") {
       continue;
     }
 
-    const functionName = normalizeCssIdentifier(node.value);
+    const functionName = normalizeIdentifier(node.value);
 
     if (functionName === "url") {
       if (node.unclosed === true) {
         throw new UnsupportedCssError("Unclosed url() functions are not supported");
       }
 
-      occurrences.push({
-        declaration,
-        end: node.sourceEndIndex,
-        originalUrl: readUrl(node),
-        start: node.sourceIndex,
-        variants: new Map(),
-      });
+      const source = readUrl(node, declaration.value);
+
+      if (!isProtocolUrl(source.value)) {
+        occurrences.push({
+          declaration,
+          functionEnd: node.sourceEndIndex,
+          functionStart: node.sourceIndex,
+          originalUrl: source.value,
+          urlEnd: source.end,
+          urlStart: source.start,
+          variants: new Map(),
+        });
+      }
       continue;
-    }
-
-    if (functionName.startsWith("--")) {
-      throw new UnsupportedCssError("Custom CSS functions in image values are not supported yet");
-    }
-
-    if (unsupportedDynamicFunctions.has(functionName)) {
-      throw new UnsupportedCssError(`${functionName}() image values are not supported yet`);
-    }
-
-    if (containsUrl(node.nodes)) {
-      throw new UnsupportedCssError("Nested url() functions are not supported yet");
     }
   }
 
   return occurrences;
 }
 
-function containsAmbiguousEscapedWord(nodes: readonly valueParser.Node[]): boolean {
-  for (const node of nodes) {
-    if (node.type === "word" && node.value.includes("\\")) {
-      return true;
-    }
-
-    if (
-      node.type === "function" &&
-      normalizeCssIdentifier(node.value) !== "url" &&
-      containsAmbiguousEscapedWord(node.nodes)
-    ) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function containsUrl(nodes: readonly valueParser.Node[]): boolean {
-  for (const node of nodes) {
-    if (node.type === "function") {
-      if (normalizeCssIdentifier(node.value) === "url" || containsUrl(node.nodes)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function readUrl(node: valueParser.FunctionNode): string {
+function readUrl(
+  node: valueParser.FunctionNode,
+  declarationValue: string,
+): { readonly end: number; readonly start: number; readonly value: string } {
   const meaningfulNodes = node.nodes.filter(
     (child) => child.type !== "space" && child.type !== "comment",
   );
@@ -377,7 +295,19 @@ function readUrl(node: valueParser.FunctionNode): string {
     throw new UnsupportedCssError("Empty url() functions are not supported");
   }
 
-  return decodeCssEscapes(valueNode.value);
+  const quoted = valueNode.type === "string";
+  const start = valueNode.sourceIndex + (quoted ? 1 : 0);
+  const end = valueNode.sourceEndIndex - (quoted ? 1 : 0);
+
+  return {
+    end,
+    start,
+    value: declarationValue.slice(start, end),
+  };
+}
+
+function isProtocolUrl(value: string): boolean {
+  return /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(value.trim());
 }
 
 async function resolveVariants(
@@ -455,11 +385,11 @@ async function resolveVariants(
 
 function createMirror(
   rule: Rule,
-  state: MirrorState,
+  state: ReadyState,
   plans: ReadonlyMap<Declaration, DeclarationPlan>,
   formats: readonly NormalizedFormatOptions[],
 ): Rule {
-  const mirror = rule.clone({ selector: gateSelector(rule.selector, state.state.tokens) });
+  const mirror = rule.clone({ selector: gateSelector(rule.selector, state.tokens) });
   mirror.removeAll();
 
   for (const node of rule.nodes) {
@@ -467,22 +397,18 @@ function createMirror(
       continue;
     }
 
-    const property = normalizeCssIdentifier(node.prop);
-
-    if (!controlledProperties.has(property)) {
-      continue;
-    }
-
-    if (property === "all") {
-      for (const longhand of backgroundLonghands) {
-        mirror.append(node.clone({ prop: longhand }));
-      }
-      continue;
-    }
-
     const plan = plans.get(node);
-    const value = plan === undefined ? node.value : renderValue(plan, state, formats);
-    mirror.append(node.clone({ value }));
+
+    if (plan === undefined) {
+      continue;
+    }
+
+    const property = normalizeIdentifier(node.prop);
+    const sourceValue = renderValue(plan, state, formats);
+    const value = property === "background" ? extractBackgroundImage(sourceValue) : sourceValue;
+    mirror.append(
+      node.clone({ prop: property === "background" ? "background-image" : node.prop, value }),
+    );
   }
 
   return mirror;
@@ -490,23 +416,103 @@ function createMirror(
 
 function renderValue(
   plan: DeclarationPlan,
-  state: MirrorState,
+  state: ReadyState,
   formats: readonly NormalizedFormatOptions[],
 ): string {
   let value = plan.declaration.value;
 
   for (const occurrence of [...plan.occurrences].reverse()) {
-    const replacement =
-      state.kind === "pending"
-        ? "none"
-        : serializeSelectedUrl(occurrence, state.state.capabilities, formats);
-    value = `${value.slice(0, occurrence.start)}${replacement}${value.slice(occurrence.end)}`;
+    const selectedUrl = selectUrl(occurrence, state.capabilities, formats);
+
+    if (selectedUrl !== occurrence.originalUrl) {
+      value = `${value.slice(0, occurrence.urlStart)}${selectedUrl}${value.slice(occurrence.urlEnd)}`;
+    }
   }
 
   return value;
 }
 
-function serializeSelectedUrl(
+function suppressOriginalUrls(rule: Rule, plans: ReadonlyMap<Declaration, DeclarationPlan>): void {
+  for (const node of rule.nodes) {
+    if (node.type !== "decl") {
+      continue;
+    }
+
+    const plan = plans.get(node);
+
+    if (plan === undefined) {
+      continue;
+    }
+
+    let value = node.value;
+
+    for (const occurrence of [...plan.occurrences].reverse()) {
+      value = `${value.slice(0, occurrence.functionStart)}none${value.slice(occurrence.functionEnd)}`;
+    }
+
+    node.value = value;
+  }
+}
+
+function extractBackgroundImage(value: string): string {
+  if (isCssWideKeyword(value)) {
+    return value;
+  }
+
+  const parsed = valueParser(value);
+  const layers: valueParser.Node[][] = [[]];
+  const separators: string[] = [];
+
+  for (const node of parsed.nodes) {
+    if (node.type === "div" && node.value === ",") {
+      separators.push(value.slice(node.sourceIndex, node.sourceEndIndex));
+      layers.push([]);
+      continue;
+    }
+
+    layers.at(-1)?.push(node);
+  }
+
+  return layers
+    .map((nodes): string => {
+      const candidates: string[] = [];
+
+      for (const node of nodes) {
+        if (node.type === "function") {
+          const name = normalizeIdentifier(node.value);
+
+          if (name === "url" || imageFunctions.has(name) || isGradientFunction(name)) {
+            candidates.push(value.slice(node.sourceIndex, node.sourceEndIndex));
+          }
+          continue;
+        }
+
+        if (node.type === "word" && normalizeIdentifier(node.value) === "none") {
+          candidates.push(value.slice(node.sourceIndex, node.sourceEndIndex));
+        }
+      }
+
+      if (candidates.length > 1) {
+        throw new UnsupportedCssError("A background layer must contain at most one image value");
+      }
+
+      return candidates[0] ?? "none";
+    })
+    .reduce(
+      (output, image, index) =>
+        index === 0 ? image : `${output}${separators[index - 1] ?? ", "}${image}`,
+      "",
+    );
+}
+
+function isGradientFunction(name: string): boolean {
+  return (
+    name === "-webkit-gradient" ||
+    /^(?:-(?:moz|ms|o|webkit)-)?(?:repeating-)?(?:conic|linear|radial)-gradient$/.test(name)
+  );
+}
+
+function selectUrl(
   occurrence: OccurrencePlan,
   capabilities: CapabilityVector,
   formats: readonly NormalizedFormatOptions[],
@@ -528,85 +534,7 @@ function serializeSelectedUrl(
     variants,
   });
 
-  if (selected.kind === "original") {
-    return occurrence.declaration.value.slice(occurrence.start, occurrence.end);
-  }
-
-  return `url("${escapeCssString(selected.url)}")`;
-}
-
-function escapeCssString(value: string): string {
-  let output = "";
-
-  for (const character of value) {
-    const codePoint = character.codePointAt(0);
-
-    if (character === "\\" || character === '"') {
-      output += `\\${character}`;
-    } else if (codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f)) {
-      output += `\\${codePoint.toString(16)} `;
-    } else {
-      output += character;
-    }
-  }
-
-  return output;
-}
-
-function decodeCssEscapes(value: string): string {
-  let output = "";
-
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index];
-
-    if (character !== "\\") {
-      output += character;
-      continue;
-    }
-
-    const next = value[index + 1];
-
-    if (next === undefined) {
-      throw new UnsupportedCssError("A URL cannot end with an incomplete CSS escape");
-    }
-
-    if (next === "\n" || next === "\f") {
-      index += 1;
-      continue;
-    }
-
-    if (next === "\r") {
-      index += value[index + 2] === "\n" ? 2 : 1;
-      continue;
-    }
-
-    if (/^[0-9a-f]$/i.test(next)) {
-      let hex = "";
-      let cursor = index + 1;
-
-      while (cursor < value.length && hex.length < 6 && /^[0-9a-f]$/i.test(value[cursor] ?? "")) {
-        hex += value[cursor];
-        cursor += 1;
-      }
-
-      if (/\s/.test(value[cursor] ?? "")) {
-        cursor += value[cursor] === "\r" && value[cursor + 1] === "\n" ? 2 : 1;
-      }
-
-      const codePoint = Number.parseInt(hex, 16);
-      output +=
-        codePoint === 0 || codePoint > 0x10_ff_ff || (codePoint >= 0xd8_00 && codePoint <= 0xdf_ff)
-          ? "�"
-          : String.fromCodePoint(codePoint);
-      index = cursor - 1;
-      continue;
-    }
-
-    output += next;
-    index += 1;
-  }
-
-  return output;
+  return selected.url;
 }
 
 function enumerateReadyStates(formats: readonly NormalizedFormatOptions[]): readonly ReadyState[] {
@@ -627,10 +555,6 @@ function enumerateReadyStates(formats: readonly NormalizedFormatOptions[]): read
   }
 
   return states;
-}
-
-function pendingTokens(formatCount: number): readonly string[] {
-  return ["pending", ...Array.from({ length: formatCount }, () => "")];
 }
 
 function gateSelector(selector: string, tokens: readonly string[]): string {
@@ -660,21 +584,20 @@ function gateSelectorBranch(branch: selectorParser.Selector, tokens: readonly st
   const rootPseudos: selectorParser.Pseudo[] = [];
   const htmlTags: selectorParser.Tag[] = [];
   branch.walkPseudos((pseudo) => {
-    if (normalizeCssIdentifier(pseudo.value) === ":root") {
+    if (normalizeIdentifier(pseudo.value) === ":root") {
       rootPseudos.push(pseudo);
     }
   });
   branch.walkTags((tag) => {
-    if (normalizeCssIdentifier(tag.value) === "html") {
+    if (normalizeIdentifier(tag.value) === "html") {
       htmlTags.push(tag);
     }
   });
 
   const beginsAtRoot =
-    (firstMeaningful.type === "pseudo" &&
-      normalizeCssIdentifier(firstMeaningful.value) === ":root") ||
+    (firstMeaningful.type === "pseudo" && normalizeIdentifier(firstMeaningful.value) === ":root") ||
     (firstMeaningful.type === "tag" &&
-      normalizeCssIdentifier(firstMeaningful.value) === "html" &&
+      normalizeIdentifier(firstMeaningful.value) === "html" &&
       !firstMeaningful.namespace);
 
   if (beginsAtRoot) {
@@ -736,58 +659,8 @@ function isCssWideKeyword(value: string): boolean {
   return /^(?:inherit|initial|revert|revert-layer|unset)$/i.test(value.trim());
 }
 
-function normalizeAtRuleName(atRule: AtRule): string {
-  const escapedContinuation =
-    atRule.raws.afterName === "" && atRule.params.startsWith("\\")
-      ? readCssIdentifierPrefix(atRule.params)
-      : "";
-  return normalizeCssIdentifier(`${atRule.name}${escapedContinuation}`);
-}
-
-function readCssIdentifierPrefix(value: string): string {
-  let index = 0;
-
-  while (index < value.length) {
-    const character = value[index];
-
-    if (character === "\\") {
-      const next = value[index + 1];
-
-      if (next === undefined || next === "\n" || next === "\r" || next === "\f") {
-        break;
-      }
-
-      index += 2;
-
-      if (/^[0-9a-f]$/i.test(next)) {
-        let hexLength = 1;
-
-        while (index < value.length && hexLength < 6 && /^[0-9a-f]$/i.test(value[index] ?? "")) {
-          index += 1;
-          hexLength += 1;
-        }
-
-        if (/\s/.test(value[index] ?? "")) {
-          index += value[index] === "\r" && value[index + 1] === "\n" ? 2 : 1;
-        }
-      }
-
-      continue;
-    }
-
-    if (/^[\w-]$/u.test(character ?? "") || (character?.codePointAt(0) ?? 0) >= 0x80) {
-      index += 1;
-      continue;
-    }
-
-    break;
-  }
-
-  return value.slice(0, index);
-}
-
-function normalizeCssIdentifier(value: string): string {
-  return decodeCssEscapes(value).toLowerCase();
+function normalizeIdentifier(value: string): string {
+  return value.toLowerCase();
 }
 
 function errorMessage(error: unknown): string {

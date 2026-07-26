@@ -6,9 +6,14 @@ export function defineConfig(options: ImgfmtOptions = {}): ImgfmtOptions {
 }
 
 export type {
+  ImgfmtDocumentFile,
+  ImgfmtDocumentIntegration,
+  ImgfmtDocumentManifest,
   ImgfmtFormatOptions,
   ImgfmtImageProbe,
+  ImgfmtManualDocumentIntegration,
   ImgfmtOptions,
+  ImgfmtStaticDocumentIntegration,
   ImgfmtVariantUrlRequest,
   ImgfmtVariantUrlResolver,
 } from "./types";

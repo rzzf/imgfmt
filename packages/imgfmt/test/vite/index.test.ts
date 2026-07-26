@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { build, createServer } from "vite-official";
+import { build, createServer, type Plugin } from "vite-official";
 import { describe, expect, it } from "vite-plus/test";
 
 import { createDevelopmentRuntimeMiddleware } from "../../src/unplugin";
@@ -24,7 +24,7 @@ describe("imgfmt/vite", () => {
           outDir: outputDirectory,
         },
         logLevel: "silent",
-        plugins: [imgfmt()],
+        plugins: [createImgfmtVitePlugin()],
         root: fixtureRoot,
       });
 
@@ -70,7 +70,7 @@ describe("imgfmt/vite", () => {
           },
         },
         logLevel: "silent",
-        plugins: [imgfmt()],
+        plugins: [createImgfmtVitePlugin()],
         root: fixtureRoot,
       });
 
@@ -92,7 +92,7 @@ describe("imgfmt/vite", () => {
     const server = await createServer({
       base: "/app/",
       logLevel: "silent",
-      plugins: [imgfmt()],
+      plugins: [createImgfmtVitePlugin()],
       root: fixtureRoot,
       server: {
         middlewareMode: true,
@@ -141,6 +141,12 @@ describe("imgfmt/vite", () => {
           '<html data-imgcaps="pending" data-imgcaps="pending"><head></head></html>',
         ),
       ).rejects.toThrow("owns the data-imgcaps attribute");
+      await expect(
+        server.transformIndexHtml(
+          "/app/",
+          '<html><head><script data-imgfmt-runtime src="other.js"></script></head></html>',
+        ),
+      ).rejects.toThrow("owns the data-imgfmt-runtime attribute");
     } finally {
       await server.close();
     }
@@ -150,7 +156,7 @@ describe("imgfmt/vite", () => {
     const server = await createServer({
       base: "./",
       logLevel: "silent",
-      plugins: [imgfmt()],
+      plugins: [createImgfmtVitePlugin()],
       root: fixtureRoot,
       server: {
         middlewareMode: true,
@@ -178,7 +184,7 @@ describe("imgfmt/vite", () => {
           write: false,
         },
         logLevel: "silent",
-        plugins: [imgfmt()],
+        plugins: [createImgfmtVitePlugin()],
         root: fixtureRoot,
       }),
     ).rejects.toThrow("requires an HTML application build");
@@ -193,7 +199,7 @@ describe("imgfmt/vite", () => {
           write: false,
         },
         logLevel: "silent",
-        plugins: [imgfmt()],
+        plugins: [createImgfmtVitePlugin()],
         root: fixtureRoot,
       }),
     ).rejects.toThrow("supports document/client builds only");
@@ -209,10 +215,24 @@ describe("imgfmt/vite", () => {
           write: false,
         },
         logLevel: "silent",
-        plugins: [imgfmt()],
+        plugins: [createImgfmtVitePlugin()],
         root: fixtureRoot,
       }),
     ).rejects.toThrow("requires at least one HTML entry");
+  });
+
+  it("rejects duplicate runtime ownership", async () => {
+    await expect(
+      build({
+        build: { write: false },
+        logLevel: "silent",
+        plugins: [
+          createImgfmtVitePlugin({ postcss: "manual" }),
+          createImgfmtVitePlugin({ postcss: "manual" }),
+        ],
+        root: fixtureRoot,
+      }),
+    ).rejects.toThrow(/data-imgfmt-runtime|runtime asset/);
   });
 
   it("requires manual mode when Vite would load an external PostCSS config", async () => {
@@ -224,7 +244,7 @@ describe("imgfmt/vite", () => {
       await expect(
         createServer({
           logLevel: "silent",
-          plugins: [imgfmt()],
+          plugins: [createImgfmtVitePlugin()],
           root: temporaryRoot,
         }),
       ).rejects.toThrow('add imgfmt/postcss there and set postcss: "manual"');
@@ -246,7 +266,7 @@ describe("imgfmt/vite", () => {
 
       const server = await createServer({
         logLevel: "silent",
-        plugins: [imgfmt()],
+        plugins: [createImgfmtVitePlugin()],
         root: applicationRoot,
         server: {
           middlewareMode: true,
@@ -259,6 +279,12 @@ describe("imgfmt/vite", () => {
     }
   });
 });
+
+function createImgfmtVitePlugin(options?: Parameters<typeof imgfmt>[0]): Plugin {
+  // The workspace installs Vite+ core as `vite` and official Vite under an alias.
+  // Avoid recursively comparing the two otherwise compatible Plugin identities.
+  return imgfmt(options) as unknown as Plugin;
+}
 
 function requiredFile(
   files: readonly string[],

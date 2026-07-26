@@ -1,4 +1,4 @@
-import { isSafeFormatId } from "./core";
+import { isSafeFormatId } from "../core";
 
 export const capabilityAttribute = "data-imgcaps" as const;
 export const pendingCapabilityState = "pending" as const;
