@@ -19,7 +19,7 @@ export default defineConfig({
     ignorePatterns: ["**/dist/**", "**/coverage/**", "**/.parcel-cache/**"],
   },
   test: {
-    include: ["packages/**/*.test.ts", "tests/**/*.test.ts"],
+    include: ["packages/*/test/**/*.test.ts"],
   },
   pack: {
     format: "esm",

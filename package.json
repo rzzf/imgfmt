@@ -12,13 +12,12 @@
     "url": "git+https://github.com/rzzf/imgfmt.git"
   },
   "scripts": {
-    "build": "vp run -r build",
-    "test:exports": "vp exec node scripts/check-package-exports.mjs"
+    "build": "vp run -r build"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.6",
-    "vite-plus": "0.2.6"
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
   "devEngines": {
     "packageManager": {

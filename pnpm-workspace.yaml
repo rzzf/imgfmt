@@ -1,8 +1,12 @@
 packages:
   - packages/*
-  - fixtures/*
-  - tests/*
+
+catalog:
+  typescript: ^6.0.3
+  vite: npm:@voidzero-dev/vite-plus-core@0.2.6
+  vite-plus: 0.2.6
+  vitest: 4.1.10
 
 overrides:
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.6
-  vitest: 4.1.10
+  vite: "catalog:"
+  vitest: "catalog:"

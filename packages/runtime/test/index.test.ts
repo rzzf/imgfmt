@@ -4,7 +4,7 @@ import {
   generateRuntimeSource,
   serializeCapabilityState,
   type FormatProbeDefinition,
-} from "./index";
+} from "../src/index";
 
 interface FakeImageSurface {
   complete: boolean;

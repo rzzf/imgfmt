@@ -203,6 +203,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    typescript:
+      specifier: ^6.0.3
+      version: 6.0.3
+    vite-plus:
+      specifier: 0.2.6
+      version: 0.2.6
+
 overrides:
   vite: npm:@voidzero-dev/vite-plus-core@0.2.6
   vitest: 4.1.10
@@ -215,13 +224,13 @@ importers:
         specifier: runtime:^24.15.0
         version: runtime:24.18.0
       typescript:
-        specifier: ^6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
       vite:
         specifier: npm:@voidzero-dev/vite-plus-core@0.2.6
         version: '@voidzero-dev/vite-plus-core@0.2.6(typescript@6.0.3)'
       vite-plus:
-        specifier: 0.2.6
+        specifier: 'catalog:'
         version: 0.2.6(@voidzero-dev/vite-plus-core@0.2.6(typescript@6.0.3))(typescript@6.0.3)
 
   packages/core: {}

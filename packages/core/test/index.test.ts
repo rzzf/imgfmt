@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { isSafeFormatId, parseImageFormatId, selectCandidate } from "./index";
+import { isSafeFormatId, parseImageFormatId, selectCandidate } from "../src/index";
 
 const avif = parseImageFormatId("avif");
 const webp = parseImageFormatId("webp");
