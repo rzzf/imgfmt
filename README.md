@@ -30,14 +30,14 @@ Built-in probes currently represent lossy/static/opaque WebP and Baseline/8-bit/
 
 ## Repository layout
 
-| Workspace | Responsibility |
-| --- | --- |
-| `packages/imgfmt` | Intended public facade and options |
-| `packages/core` | Host-neutral URL selection policy |
-| `packages/runtime` | Probe barrier and classic runtime source generator |
-| `packages/postcss` | CSS discovery and materialization |
-| `packages/unplugin` | Shared host lifecycle shell |
-| `packages/parcel` | Native Parcel integration |
+| Workspace           | Responsibility                                     |
+| ------------------- | -------------------------------------------------- |
+| `packages/imgfmt`   | Intended public facade and options                 |
+| `packages/core`     | Host-neutral URL selection policy                  |
+| `packages/runtime`  | Probe barrier and classic runtime source generator |
+| `packages/postcss`  | CSS discovery and materialization                  |
+| `packages/unplugin` | Shared host lifecycle shell                        |
+| `packages/parcel`   | Native Parcel integration                          |
 
 All package manifests remain private until the public API and end-to-end behavior are ready.
 
