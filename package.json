@@ -12,7 +12,8 @@
     "url": "git+https://github.com/rzzf/imgfmt.git"
   },
   "scripts": {
-    "build": "vp run -r build"
+    "build": "vp run -r build",
+    "test:exports": "vp exec node scripts/check-package-exports.mjs"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
