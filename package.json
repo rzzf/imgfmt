@@ -1,0 +1,38 @@
+{
+  "name": "imgfmt-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Exact-one delivery of user-provided CSS image format variants.",
+  "homepage": "https://github.com/rzzf/imgfmt#readme",
+  "bugs": {
+    "url": "https://github.com/rzzf/imgfmt/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rzzf/imgfmt.git"
+  },
+  "scripts": {
+    "build": "vp run -r build"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "npm:@voidzero-dev/vite-plus-core@0.2.6",
+    "vite-plus": "0.2.6"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.x",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "^24.15.0",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=24.15.0",
+    "pnpm": "11.x"
+  }
+}
