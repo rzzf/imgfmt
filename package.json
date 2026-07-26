@@ -13,10 +13,11 @@
   },
   "scripts": {
     "build": "vp run -r build",
-    "release:prepare": "node ./scripts/prepare-release.mjs",
-    "release:verify": "node ./scripts/verify-release.mjs"
+    "changelog": "vr changelog",
+    "release": "vp run -r build && vr release --check-remote-version"
   },
   "devDependencies": {
+    "@varlet/release": "2.2.3",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
