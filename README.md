@@ -4,6 +4,22 @@ CSS-first delivery of user-provided image format variants with an exact-one load
 
 > **Status:** early architecture scaffold. The CSS transformer and build-tool adapters are not yet usable or published.
 
+## Installation
+
+The package is not published yet. After the first public release, install it as a development dependency:
+
+```sh
+pnpm add -D imgfmt
+```
+
+To work on the current repository instead:
+
+```sh
+git clone https://github.com/rzzf/imgfmt.git
+cd imgfmt
+vp install
+```
+
 ## Goals
 
 - Map image-bearing CSS values to user-provided WebP, AVIF or other format URLs.
@@ -15,6 +31,64 @@ CSS-first delivery of user-provided image format variants with an exact-one load
 ## Scope boundary
 
 imgfmt handles CSS and opaque URLs only. It does not read, download, decode, encode, convert, optimize, emit or validate application images. Users provide and host every candidate image; the owning build tool retains its normal URL resolution, hashing, public-path and missing-file behavior.
+
+## Usage
+
+The following shows the intended first-release Vite API. It is a design target and is not implemented by the current scaffold.
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+import imgfmt from "imgfmt/vite";
+
+export default defineConfig({
+  plugins: [
+    imgfmt({
+      formats: [
+        { id: "avif", extension: ".avif" },
+        { id: "webp", extension: ".webp" },
+      ],
+    }),
+  ],
+});
+```
+
+Given this CSS:
+
+```css
+.hero {
+  background-image: url("./hero.png");
+}
+```
+
+the application must provide every referenced file itself:
+
+```text
+hero.png
+hero.avif
+hero.webp
+```
+
+The configured order expresses preference: AVIF, then WebP, then the retained original. The Vite adapter will be responsible for installing the PostCSS transform and document runtime while leaving all three URLs in Vite's normal asset pipeline.
+
+For non-sibling URLs, the intended API accepts a synchronous or asynchronous resolver:
+
+```ts
+const variantManifest: Record<string, Record<string, string | undefined>> = {
+  "./hero.png": {
+    avif: "/images/hero.avif",
+  },
+};
+
+imgfmt({
+  formats: [{ id: "avif", extension: ".avif" }],
+  resolveVariantUrl({ originalUrl, format }) {
+    return variantManifest[originalUrl]?.[format];
+  },
+});
+```
+
+Returning `undefined` means that format is unavailable for that particular CSS image, so selection continues to the next configured format and eventually the original.
 
 ## Design outline
 
