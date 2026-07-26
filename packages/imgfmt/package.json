@@ -25,7 +25,9 @@
     "directory": "packages/imgfmt"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "type": "module",
   "sideEffects": false,
@@ -37,13 +39,36 @@
       "types": "./dist/index.d.ts",
       "module-sync": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./postcss": {
+      "types": "./dist/postcss.d.ts",
+      "module-sync": "./dist/postcss.js",
+      "default": "./dist/postcss.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "module-sync": "./dist/vite.js",
+      "default": "./dist/vite.js"
     }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "vp pack src/index.ts --dts"
+    "build": "vp pack src/index.ts src/postcss.ts src/vite.ts --dts"
+  },
+  "dependencies": {
+    "postcss-selector-parser": "^7.1.4",
+    "postcss-value-parser": "^4.2.0",
+    "unplugin": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "postcss": "catalog:",
+    "vite-official": "catalog:"
+  },
+  "peerDependencies": {
+    "postcss": "^8.4.31"
   },
   "engines": {
     "node": ">=24.15.0"

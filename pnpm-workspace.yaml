@@ -2,8 +2,11 @@ packages:
   - packages/*
 
 catalog:
+  "@types/node": ^24.13.3
+  postcss: ^8.5.14
   typescript: ^6.0.3
   vite: npm:@voidzero-dev/vite-plus-core@0.2.6
+  vite-official: npm:vite@^8.1.5
   vite-plus: 0.2.6
   vitest: 4.1.10
 

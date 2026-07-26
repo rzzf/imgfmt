@@ -24,7 +24,7 @@ export default defineConfig({
   pack: {
     format: "esm",
     platform: "neutral",
-    sourcemap: true,
+    sourcemap: false,
     dts: true,
     clean: true,
     deps: {

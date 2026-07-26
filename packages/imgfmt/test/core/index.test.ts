@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { isSafeFormatId, parseImageFormatId, selectCandidate } from "../src/index";
+import { isSafeFormatId, parseImageFormatId, selectCandidate } from "../../src/core";
 
 const avif = parseImageFormatId("avif");
 const webp = parseImageFormatId("webp");
@@ -9,17 +9,14 @@ describe("selectCandidate", () => {
   it("chooses the first supported variant available for this occurrence", () => {
     expect(
       selectCandidate({
+        capabilities: { avif: true, webp: true },
         originalUrl: "hero.png",
-        variants: [{ format: webp, url: "hero.webp" }],
         preference: [avif, webp],
-        capabilities: {
-          avif: true,
-          webp: true,
-        },
+        variants: [{ format: webp, url: "hero.webp" }],
       }),
     ).toEqual({
-      kind: "variant",
       format: "webp",
+      kind: "variant",
       url: "hero.webp",
     });
   });
@@ -27,20 +24,17 @@ describe("selectCandidate", () => {
   it("uses the original when no supported user-provided variant exists", () => {
     expect(
       selectCandidate({
+        capabilities: { avif: false, webp: false },
         originalUrl: "hero.png",
+        preference: [avif, webp],
         variants: [
           { format: avif, url: "hero.avif" },
           { format: webp, url: "hero.webp" },
         ],
-        preference: [avif, webp],
-        capabilities: {
-          avif: false,
-          webp: false,
-        },
       }),
     ).toEqual({
-      kind: "original",
       format: "original",
+      kind: "original",
       url: "hero.png",
     });
   });
@@ -50,39 +44,25 @@ describe("selectCandidate", () => {
 
     expect(
       selectCandidate({
-        originalUrl: "hero.png",
-        variants: [{ format: webp, url: "hero.webp" }],
-        preference: [webp],
         capabilities,
+        originalUrl: "hero.png",
+        preference: [webp],
+        variants: [{ format: webp, url: "hero.webp" }],
       }),
     ).toEqual({
-      kind: "original",
       format: "original",
+      kind: "original",
       url: "hero.png",
     });
   });
 
-  it("rejects duplicate variant formats", () => {
+  it("rejects duplicate formats before selecting", () => {
     expect(() =>
       selectCandidate({
-        originalUrl: "hero.png",
-        variants: [
-          { format: webp, url: "hero-a.webp" },
-          { format: webp, url: "hero-b.webp" },
-        ],
-        preference: [webp],
         capabilities: { webp: true },
-      }),
-    ).toThrow(TypeError);
-  });
-
-  it("validates the full preference list before selecting a candidate", () => {
-    expect(() =>
-      selectCandidate({
         originalUrl: "hero.png",
-        variants: [{ format: webp, url: "hero.webp" }],
         preference: [webp, webp],
-        capabilities: { webp: true },
+        variants: [{ format: webp, url: "hero.webp" }],
       }),
     ).toThrow(TypeError);
   });

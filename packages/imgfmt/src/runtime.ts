@@ -1,3 +1,5 @@
+import { isSafeFormatId } from "./core";
+
 export const capabilityAttribute = "data-imgcaps" as const;
 export const pendingCapabilityState = "pending" as const;
 export const readyCapabilityToken = "ready" as const;
@@ -28,27 +30,6 @@ export interface SerializeCapabilityStateInput {
 /** Modernizr 3.13.1: lossy, static, opaque WebP, 1x1. */
 export const webpLossyProbe: ImageProbeDefinition = {
   uri: "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=",
-  width: 1,
-  height: 1,
-};
-
-/** Modernizr 3.13.1: WebP alpha sample, 1x1. */
-export const webpAlphaProbe: ImageProbeDefinition = {
-  uri: "data:image/webp;base64,UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAABBxAR/Q9ERP8DAABWUDggGAAAADABAJ0BKgEAAQADADQlpAADcAD++/1QAA==",
-  width: 1,
-  height: 1,
-};
-
-/** Modernizr 3.13.1: animated WebP container sample, 1x1. */
-export const webpAnimationProbe: ImageProbeDefinition = {
-  uri: "data:image/webp;base64,UklGRlIAAABXRUJQVlA4WAoAAAASAAAAAAAAAAAAQU5JTQYAAAD/////AABBTk1GJgAAAAAAAAAAAAAAAAAAAGQAAABWUDhMDQAAAC8AAAAQBxAREYiI/gcA",
-  width: 1,
-  height: 1,
-};
-
-/** Modernizr 3.13.1: lossless, static, opaque WebP, 1x1. */
-export const webpLosslessProbe: ImageProbeDefinition = {
-  uri: "data:image/webp;base64,UklGRh4AAABXRUJQVlA4TBEAAAAvAAAAAAfQ//73v/+BiOh/AAA=",
   width: 1,
   height: 1,
 };
@@ -100,11 +81,7 @@ export function generateRuntimeSource(options: GenerateRuntimeSourceOptions): st
   }
 
   const formatIds: string[] = [];
-  const flattenedProbes: Array<
-    ImageProbeDefinition & {
-      readonly formatIndex: number;
-    }
-  > = [];
+  const flattenedProbes: Array<ImageProbeDefinition & { readonly formatIndex: number }> = [];
   const seen = new Set<string>();
 
   for (const [formatIndex, format] of options.formats.entries()) {
@@ -196,15 +173,7 @@ export function generateRuntimeSource(options: GenerateRuntimeSourceOptions): st
 }
 
 function assertFormatId(value: string): void {
-  if (
-    !/^[a-z][a-z0-9-]*$/.test(value) ||
-    value === "constructor" ||
-    value === "original" ||
-    value === "pending" ||
-    value === "prototype" ||
-    value === "ready" ||
-    value.startsWith("no-")
-  ) {
+  if (!isSafeFormatId(value)) {
     throw new TypeError(`Invalid image format id: ${value}`);
   }
 }

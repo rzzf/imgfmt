@@ -1,11 +1,4 @@
 {
   "files": [],
-  "references": [
-    { "path": "./packages/imgfmt" },
-    { "path": "./packages/core" },
-    { "path": "./packages/runtime" },
-    { "path": "./packages/postcss" },
-    { "path": "./packages/unplugin" },
-    { "path": "./packages/parcel" }
-  ]
+  "references": [{ "path": "./packages/imgfmt" }, { "path": "./packages/parcel" }]
 }

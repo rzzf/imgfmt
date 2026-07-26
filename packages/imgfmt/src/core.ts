@@ -16,7 +16,6 @@ export type CapabilityVector = Readonly<Record<string, boolean | undefined>>;
 
 export interface ImageVariantUrl {
   readonly format: ImageFormatId;
-  /** An opaque CSS or bundler URL supplied by the user. */
   readonly url: string;
 }
 
@@ -41,10 +40,7 @@ export interface VariantSelection {
 
 export type CandidateSelection = OriginalSelection | VariantSelection;
 
-/**
- * Selects per logical occurrence, not per page. A supported format is skipped
- * when this particular source has no user-provided variant for it.
- */
+/** Selects a candidate independently for one logical CSS URL occurrence. */
 export function selectCandidate(input: CandidateSelectionInput): CandidateSelection {
   if (input.originalUrl.length === 0) {
     throw new TypeError("Original image URL must not be empty");
