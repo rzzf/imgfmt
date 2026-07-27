@@ -1,0 +1,11 @@
+.banner {
+  background: url("./banner.png") center / cover no-repeat;
+}
+
+.remote {
+  background-image: url("https://cdn.example.com/remote.png");
+}
+
+.protocol-relative {
+  background-image: url("//cdn.example.com/remote.png");
+}

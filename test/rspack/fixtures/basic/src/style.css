@@ -1,0 +1,11 @@
+.banner {
+  background-image: linear-gradient(#0008, #0000), url("./banner.png");
+}
+
+.remote {
+  background-image: url("https://cdn.example.com/remote.png");
+}
+
+.protocol-relative {
+  background-image: url("//cdn.example.com/remote.png");
+}

@@ -19,9 +19,19 @@ export default defineConfig({
     ignorePatterns: ["**/dist/**", "**/coverage/**", "**/.parcel-cache/**"],
   },
   test: {
-    include: ["packages/*/test/**/*.test.ts"],
+    include: ["test/**/*.test.ts", "playground/test/**/*.test.ts"],
   },
   pack: {
+    entry: [
+      "src/index.ts",
+      "src/postcss.ts",
+      "src/vite.ts",
+      "src/rollup.ts",
+      "src/rolldown.ts",
+      "src/webpack.ts",
+      "src/rspack.ts",
+      "src/esbuild.ts",
+    ],
     format: "esm",
     platform: "neutral",
     sourcemap: false,

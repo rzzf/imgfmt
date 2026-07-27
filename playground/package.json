@@ -1,0 +1,27 @@
+{
+  "name": "imgfmt-playground",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@shikijs/langs": "catalog:",
+    "@shikijs/monaco": "catalog:",
+    "@shikijs/themes": "catalog:",
+    "@vue/compiler-sfc": "catalog:",
+    "less": "catalog:",
+    "monaco-editor-core": "catalog:",
+    "postcss": "catalog:",
+    "sass": "catalog:",
+    "shiki": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "vite-official": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

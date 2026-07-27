@@ -1,28 +1,44 @@
 packages:
-  - packages/*
+  - examples/*
+  - playground
 
 allowBuilds:
+  "@parcel/watcher": false
   esbuild: true
 
 catalog:
   "@rollup/plugin-html": ^2.0.0
   "@rspack/core": ^2.1.5
+  "@shikijs/langs": ^4.3.1
+  "@shikijs/monaco": ^4.3.1
+  "@shikijs/themes": ^4.3.1
   "@types/node": ^24.13.3
+  "@vitejs/plugin-vue": ^6.0.8
+  "@vue/compiler-sfc": ^3.5.40
   css-loader: ^7.1.4
   esbuild: ^0.28.1
   html-webpack-plugin: ^5.6.7
+  less: ^4.8.0
   mini-css-extract-plugin: ^2.10.2
+  monaco-editor-core: ^0.56.0
   postcss: ^8.5.14
   postcss-loader: ^8.2.1
   rolldown: ^1.2.0
   rollup: ^4.62.2
+  sass: ^1.102.0
+  shiki: ^4.3.1
   typescript: ^6.0.3
   vite: npm:@voidzero-dev/vite-plus-core@0.2.6
   vite-official: npm:vite@^8.1.5
   vite-plus: 0.2.6
   vitest: 4.1.10
+  vue: ^3.5.40
+  vue-tsc: ^3.3.8
   webpack: ^5.109.0
 
+catalogs:
+  official:
+    vite: ^8.1.5
+
 overrides:
-  vite: "catalog:"
   vitest: "catalog:"

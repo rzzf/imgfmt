@@ -1,41 +1,153 @@
 {
-  "name": "imgfmt-workspace",
+  "name": "imgfmt",
   "version": "0.0.0",
-  "private": true,
   "description": "Exact-one delivery of user-provided CSS image format variants.",
+  "keywords": [
+    "avif",
+    "css",
+    "esbuild",
+    "image",
+    "postcss",
+    "rolldown",
+    "rollup",
+    "rspack",
+    "unplugin",
+    "vite",
+    "webp",
+    "webpack"
+  ],
   "homepage": "https://github.com/rzzf/imgfmt#readme",
   "bugs": {
     "url": "https://github.com/rzzf/imgfmt/issues"
   },
+  "license": "MIT",
+  "author": "rzzf",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rzzf/imgfmt.git"
   },
-  "scripts": {
-    "build": "vp run -r build",
-    "changelog": "vr changelog",
-    "release": "vp run -r build && vr release --check-remote-version"
-  },
-  "devDependencies": {
-    "@varlet/release": "2.2.3",
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
-  },
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "11.x",
-      "onFail": "download"
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "module-sync": "./dist/index.js",
+      "default": "./dist/index.js"
     },
-    "runtime": {
-      "name": "node",
-      "version": "^24.15.0",
-      "onFail": "download"
+    "./postcss": {
+      "types": "./dist/postcss.d.ts",
+      "module-sync": "./dist/postcss.js",
+      "default": "./dist/postcss.js"
+    },
+    "./esbuild": {
+      "types": "./dist/esbuild.d.ts",
+      "module-sync": "./dist/esbuild.js",
+      "default": "./dist/esbuild.js"
+    },
+    "./rolldown": {
+      "types": "./dist/rolldown.d.ts",
+      "module-sync": "./dist/rolldown.js",
+      "default": "./dist/rolldown.js"
+    },
+    "./rollup": {
+      "types": "./dist/rollup.d.ts",
+      "module-sync": "./dist/rollup.js",
+      "default": "./dist/rollup.js"
+    },
+    "./rspack": {
+      "types": "./dist/rspack.d.ts",
+      "module-sync": "./dist/rspack.js",
+      "default": "./dist/rspack.js"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "module-sync": "./dist/vite.js",
+      "default": "./dist/vite.js"
+    },
+    "./webpack": {
+      "types": "./dist/webpack.d.ts",
+      "module-sync": "./dist/webpack.js",
+      "default": "./dist/webpack.js"
     }
   },
-  "engines": {
-    "node": ">=24.15.0",
-    "pnpm": "11.x"
-  }
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "build:all": "vp run -r -w build",
+    "check": "vp check",
+    "changelog": "vr changelog",
+    "example": "pnpm build && vp run -F imgfmt-example-vue3-vite dev",
+    "fix": "vp check --fix",
+    "play": "vp run -F imgfmt-playground dev",
+    "release": "pnpm build:all && vr release --check-remote-version",
+    "test": "vp test --run"
+  },
+  "dependencies": {
+    "postcss-selector-parser": "^7.1.4",
+    "postcss-value-parser": "^4.2.0",
+    "unplugin": "^3.3.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-html": "catalog:",
+    "@rspack/core": "catalog:",
+    "@types/node": "catalog:",
+    "@varlet/release": "2.2.3",
+    "css-loader": "catalog:",
+    "esbuild": "catalog:",
+    "html-webpack-plugin": "catalog:",
+    "mini-css-extract-plugin": "catalog:",
+    "postcss": "catalog:",
+    "postcss-loader": "catalog:",
+    "rolldown": "catalog:",
+    "rollup": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-official": "catalog:",
+    "vite-plus": "catalog:",
+    "webpack": "catalog:"
+  },
+  "peerDependencies": {
+    "@rspack/core": "^2.1.5",
+    "esbuild": "^0.28.1",
+    "html-webpack-plugin": "^5.6.7",
+    "postcss": "^8.4.31",
+    "rolldown": "^1.2.0",
+    "rollup": "^4.62.2",
+    "vite": "^8.1.5",
+    "webpack": "^5.109.0"
+  },
+  "peerDependenciesMeta": {
+    "@rspack/core": {
+      "optional": true
+    },
+    "esbuild": {
+      "optional": true
+    },
+    "html-webpack-plugin": {
+      "optional": true
+    },
+    "rolldown": {
+      "optional": true
+    },
+    "rollup": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    },
+    "webpack": {
+      "optional": true
+    }
+  },
+  "packageManager": "pnpm@11.17.0"
 }

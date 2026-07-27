@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Transform CSS, Sass, Less or Vue SFC styles with imgfmt." />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111814'/%3E%3Cpath d='M16 18h32v8H16zm0 12h24v8H16zm0 12h16v8H16z' fill='%23c7ff3d'/%3E%3C/svg%3E"
+    />
+    <meta name="theme-color" content="#111814" />
+    <title>imgfmt playground</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="imgfmt playground home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+          <span>imgfmt</span>
+          <small>Playground</small>
+        </a>
+
+        <div class="tool-picker">
+          <span id="tool-picker-label" class="visually-hidden">Build tool</span>
+          <div
+            id="tool-tabs"
+            class="tool-tabs"
+            role="tablist"
+            aria-labelledby="tool-picker-label"
+          ></div>
+        </div>
+
+        <label class="format-control" for="format-preset">
+          <span class="visually-hidden">Format preference</span>
+          <select id="format-preset" aria-label="Format preference"></select>
+        </label>
+
+        <a
+          class="repository-link"
+          href="https://github.com/rzzf/imgfmt"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Open imgfmt on GitHub"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path
+              d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.1.68-.22.68-.49 0-.24-.01-1.05-.02-1.91-2.78.62-3.37-1.21-3.37-1.21-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.57 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.36-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05A9.3 9.3 0 0 1 12 6.95a9.3 9.3 0 0 1 2.5.35c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.95.68 1.92 0 1.38-.01 2.49-.01 2.83 0 .27.18.59.69.49A10.24 10.24 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z"
+            />
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </header>
+
+      <main class="editor-grid" aria-label="Stylesheet transform workspace">
+        <section class="editor-panel input-panel" aria-labelledby="input-heading">
+          <header class="editor-toolbar">
+            <div class="editor-title">
+              <span class="file-dot" aria-hidden="true"></span>
+              <h1 id="input-heading">Input</h1>
+              <label class="language-control" for="input-language">
+                <span class="visually-hidden">Input stylesheet language</span>
+                <select id="input-language" aria-label="Input stylesheet language"></select>
+              </label>
+              <small id="input-file">input.css</small>
+            </div>
+            <div class="toolbar-actions">
+              <span id="editor-engine" class="engine-status">Loading editor…</span>
+              <button id="reset-input" class="toolbar-button" type="button">Reset</button>
+            </div>
+          </header>
+          <div id="input-editor" class="editor-host" data-editor-state="loading" aria-busy="true">
+            <label class="visually-hidden" for="input-css">Stylesheet to transform</label>
+            <textarea
+              id="input-css"
+              class="editor-fallback"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              wrap="off"
+            ></textarea>
+          </div>
+        </section>
+
+        <section class="editor-panel config-panel" aria-labelledby="config-heading">
+          <header class="editor-toolbar">
+            <div class="editor-title">
+              <span class="file-dot" aria-hidden="true"></span>
+              <h2 id="config-heading">Config</h2>
+              <span id="integration-mode" class="mode-badge"></span>
+              <small id="integration-file" class="file-label"></small>
+            </div>
+            <div class="toolbar-actions">
+              <button
+                id="copy-snippet"
+                class="toolbar-button"
+                type="button"
+                aria-label="Copy configuration"
+              >
+                Copy
+              </button>
+            </div>
+          </header>
+          <div id="config-editor" class="editor-host" data-editor-state="loading" aria-busy="true">
+            <pre
+              id="config-fallback"
+              class="editor-fallback config-scroll"
+              tabindex="0"
+              aria-labelledby="config-heading"
+            ><code id="integration-snippet"></code></pre>
+          </div>
+        </section>
+
+        <section class="editor-panel output-panel" aria-labelledby="output-heading">
+          <header class="editor-toolbar">
+            <div class="editor-title">
+              <span class="file-dot" aria-hidden="true"></span>
+              <h2 id="output-heading">Output CSS</h2>
+              <small id="output-meta"></small>
+            </div>
+            <div class="toolbar-actions">
+              <p id="compile-status" class="compile-status" data-state="idle" aria-live="polite">
+                <span aria-hidden="true"></span>
+                <strong>Waiting</strong>
+              </p>
+              <button id="copy-output" class="toolbar-button" type="button">Copy</button>
+            </div>
+          </header>
+          <div id="output-editor" class="editor-host" data-editor-state="loading" aria-busy="true">
+            <pre
+              id="output-fallback"
+              class="editor-fallback output-scroll"
+              tabindex="0"
+              aria-labelledby="output-heading"
+            ><code id="output-css"></code></pre>
+          </div>
+        </section>
+      </main>
+
+      <p id="highlight-status" class="visually-hidden" role="status"></p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
