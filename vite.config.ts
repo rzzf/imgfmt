@@ -28,7 +28,7 @@ export default defineConfig({
     trailingComma: "all",
     proseWrap: "preserve",
     sortImports: true,
-    ignorePatterns: ["**/dist/**", "**/coverage/**", "**/.parcel-cache/**"],
+    ignorePatterns: ["CHANGELOG.md", "**/dist/**", "**/coverage/**", "**/.parcel-cache/**"],
   },
   test: {
     include: ["test/**/*.test.ts", "playground/test/**/*.test.ts"],
