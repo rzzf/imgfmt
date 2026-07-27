@@ -7,6 +7,7 @@
     "css",
     "esbuild",
     "image",
+    "parcel",
     "postcss",
     "rolldown",
     "rollup",
@@ -46,6 +47,11 @@
       "types": "./dist/postcss.d.ts",
       "module-sync": "./dist/postcss.js",
       "default": "./dist/postcss.js"
+    },
+    "./parcel": {
+      "types": "./dist/parcel.d.ts",
+      "module-sync": "./dist/parcel.js",
+      "default": "./dist/parcel.js"
     },
     "./esbuild": {
       "types": "./dist/esbuild.d.ts",
@@ -98,6 +104,8 @@
     "unplugin": "^3.3.0"
   },
   "devDependencies": {
+    "@parcel/config-default": "catalog:",
+    "@parcel/core": "catalog:",
     "@rollup/plugin-html": "catalog:",
     "@rspack/core": "catalog:",
     "@types/node": "catalog:",
@@ -106,8 +114,10 @@
     "esbuild": "catalog:",
     "html-webpack-plugin": "catalog:",
     "mini-css-extract-plugin": "catalog:",
+    "parcel": "catalog:",
     "postcss": "catalog:",
     "postcss-loader": "catalog:",
+    "posthtml": "catalog:",
     "rolldown": "catalog:",
     "rollup": "catalog:",
     "typescript": "catalog:",
@@ -120,7 +130,9 @@
     "@rspack/core": "^2.1.5",
     "esbuild": "^0.28.1",
     "html-webpack-plugin": "^5.6.7",
+    "parcel": "^2.0.0",
     "postcss": "^8.4.31",
+    "posthtml": "^0.16.5",
     "rolldown": "^1.2.0",
     "rollup": "^4.62.2",
     "vite": "^8.1.5",
@@ -134,6 +146,12 @@
       "optional": true
     },
     "html-webpack-plugin": {
+      "optional": true
+    },
+    "parcel": {
+      "optional": true
+    },
+    "posthtml": {
       "optional": true
     },
     "rolldown": {

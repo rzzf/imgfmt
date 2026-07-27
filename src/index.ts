@@ -13,6 +13,7 @@ export type {
   ImgfmtImageProbe,
   ImgfmtManualDocumentIntegration,
   ImgfmtOptions,
+  ImgfmtParcelOptions,
   ImgfmtStaticDocumentIntegration,
   ImgfmtVariantUrlRequest,
   ImgfmtVariantUrlResolver,

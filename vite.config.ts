@@ -25,6 +25,7 @@ export default defineConfig({
     entry: [
       "src/index.ts",
       "src/postcss.ts",
+      "src/parcel.ts",
       "src/vite.ts",
       "src/rollup.ts",
       "src/rolldown.ts",

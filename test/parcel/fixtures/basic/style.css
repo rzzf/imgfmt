@@ -1,0 +1,14 @@
+@import "./imported.css";
+
+.banner {
+  background: #123 center / cover no-repeat url("./banner.png");
+}
+
+.masked-button {
+  -webkit-mask-image: url("./button-mask.png");
+  mask-image: url("./button-mask.png");
+}
+
+.purge-me {
+  color: red;
+}

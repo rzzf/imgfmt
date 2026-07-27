@@ -77,12 +77,10 @@ export function createPostcssPlugin(
   inputOptions: ImgfmtOptions = {},
   compilerOptions: CssCompilerOptions = {},
 ): Plugin {
-  const options = normalizeOptions(inputOptions);
-
   return {
     postcssPlugin: pluginName,
     async Once(root, { result }): Promise<void> {
-      await transformCss(root, result, options, compilerOptions);
+      await transformCssRoot(root, result, inputOptions, compilerOptions);
     },
   };
 }
@@ -91,6 +89,16 @@ export const postcssPlugin: PluginCreator<ImgfmtOptions> = (inputOptions = {}) =
   createPostcssPlugin(inputOptions);
 
 postcssPlugin.postcss = true;
+
+/** Runs the shared compiler against an existing PostCSS tree. */
+export async function transformCssRoot(
+  root: Root,
+  result: Result,
+  inputOptions: ImgfmtOptions = {},
+  compilerOptions: CssCompilerOptions = {},
+): Promise<void> {
+  await transformCss(root, result, normalizeOptions(inputOptions), compilerOptions);
+}
 
 async function transformCss(
   root: Root,

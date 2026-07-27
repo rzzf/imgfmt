@@ -70,3 +70,11 @@ export interface ImgfmtOptions {
   /** Treat resolver failures as build errors. Structural CSS failures are always fatal. */
   readonly strict?: boolean;
 }
+
+/**
+ * Options loaded by `imgfmt/parcel`.
+ *
+ * Parcel owns both the CSS pipeline and emitted HTML, so host ownership
+ * options are intentionally unavailable here.
+ */
+export type ImgfmtParcelOptions = Omit<ImgfmtOptions, "document" | "postcss">;
