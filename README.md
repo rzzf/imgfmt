@@ -69,7 +69,7 @@ opens application image files or adds an image-processing cache.
 pnpm add -D imgfmt postcss
 ```
 
-imgfmt is ESM-only and requires Node.js `>=24.15.0` at build time.
+imgfmt publishes ESM and CommonJS entry points and requires Node.js `>=24.15.0` at build time.
 
 ### 2. Provide the image files
 
