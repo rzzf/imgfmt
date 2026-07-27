@@ -237,7 +237,8 @@ imgfmt preserves raw URL quoting, escaping and whitespace. Nested URLs inside fu
 | `imgfmt/esbuild`  | Automatic filesystem CSS or manual PostCSS | Explicit static/manual document mode |
 | `imgfmt/postcss`  | CSS only                                   | None                                 |
 
-### Vite
+<details>
+<summary>Vite</summary>
 
 ```ts
 // vite.config.ts
@@ -285,7 +286,10 @@ export default defineConfig({
 });
 ```
 
-### Rollup
+</details>
+
+<details>
+<summary>Rollup</summary>
 
 Place imgfmt before the CSS extraction plugin and include an HTML plugin:
 
@@ -305,7 +309,10 @@ export default {
 imgfmt transforms source CSS but does not provide CSS extraction. At least one HTML asset must be
 emitted so the adapter can install the pending state and inline runtime.
 
-### Rolldown
+</details>
+
+<details>
+<summary>Rolldown</summary>
 
 Rolldown uses the same ordering contract:
 
@@ -322,7 +329,10 @@ export default {
 };
 ```
 
-### webpack
+</details>
+
+<details>
+<summary>webpack</summary>
 
 webpack requires `imgfmt/postcss` in its CSS loader chain and `HtmlWebpackPlugin` for document
 ownership:
@@ -365,7 +375,10 @@ export default {
 };
 ```
 
-### Rspack
+</details>
+
+<details>
+<summary>Rspack</summary>
 
 Rspack requires manual PostCSS ownership and `rspack.HtmlRspackPlugin`:
 
@@ -405,7 +418,10 @@ export default {
 };
 ```
 
-### esbuild
+</details>
+
+<details>
+<summary>esbuild</summary>
 
 esbuild has no HTML lifecycle, so it requires explicit document ownership. Static mode reads source
 HTML and writes the installed document under `outdir`:
@@ -456,7 +472,10 @@ const plugin = imgfmt({
 Manual mode supports `write: false`. Both modes require `bundle: true`, a browser build, at least
 one application entry and `outdir`.
 
-### PostCSS
+</details>
+
+<details>
+<summary>PostCSS</summary>
 
 ```ts
 // postcss.config.ts
@@ -470,6 +489,8 @@ export default {
 The standalone entry only transforms CSS. It does not modify HTML or install the capability
 runtime, so applications must pair it with the matching host adapter and options. Unresolved
 `@import` rules are rejected because imgfmt must see every participating stylesheet.
+
+</details>
 
 ## Configuration
 
