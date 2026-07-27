@@ -240,6 +240,22 @@ imgfmt preserves raw URL quoting, escaping and whitespace. Nested URLs inside fu
 | `imgfmt/esbuild`  | Automatic filesystem CSS or manual PostCSS | Explicit static/manual document mode |
 | `imgfmt/postcss`  | CSS only                                   | None                                 |
 
+The peer ranges track the oldest host APIs used by each adapter, while development and CI continue
+to exercise the current catalog versions:
+
+| Host                   | Supported versions                      |
+| ---------------------- | --------------------------------------- |
+| Vite                   | 4.x, 5.x, 6.x, 7.x and 8.x              |
+| Rollup                 | 2.78.0+, 3.x and 4.x                    |
+| Rolldown               | 1.x                                     |
+| Parcel                 | 2.x                                     |
+| webpack                | 5.20.0+ within 5.x                      |
+| HtmlWebpackPlugin      | 5.6.1+ within 5.x                       |
+| Rspack                 | 1.1.0+ and 2.x                          |
+| esbuild                | 0.18.14 through the current pre-1.0 API |
+| PostCSS                | 8.4.31+ within 8.x                      |
+| PostHTML (Parcel only) | 0.16.5+ within 0.16.x                   |
+
 <details>
 <summary>Vite</summary>
 
