@@ -1,6 +1,6 @@
 {
   "name": "imgfmt",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Exact-one delivery of user-provided CSS image format variants.",
   "keywords": [
     "avif",
