@@ -2,7 +2,7 @@
 
 Format-aware CSS image delivery for AVIF, WebP and your original assets.
 
-[Playground](playground) ·
+[Playground](https://rzzf.github.io/imgfmt/) ·
 [Vue 3 + Vite Example](examples/vue3-vite) ·
 [License](LICENSE)
 
@@ -139,9 +139,11 @@ The generated shorthand example intentionally copies only its image layers into
 
 ## Playground and Example
 
-The included [playground](playground) runs the real compiler. It accepts CSS, Sass (SCSS), Less and
-Vue SFC input, shows the transformed CSS, and provides configuration examples for every supported
-build tool:
+Try the real compiler in the [online playground](https://rzzf.github.io/imgfmt/). It accepts CSS,
+Sass (SCSS), Less and Vue SFC input, shows the transformed CSS, and provides configuration examples
+for every supported build tool.
+
+The playground source is included in [`playground/`](playground) and can also run locally:
 
 ```sh
 pnpm install
